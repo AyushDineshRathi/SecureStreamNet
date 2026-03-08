@@ -1,1 +1,9 @@
 venv
+.vscode
+
+secure-media-network/serializer_new.o
+secure-media-network/client_run.log
+secure-media-network/server_run.log
+secure-media-network/server_app.exe
+secure-media-network/client_app.exe
+secure-media-network/z.exe

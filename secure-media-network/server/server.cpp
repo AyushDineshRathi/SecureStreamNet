@@ -3,23 +3,26 @@
 
 #include "../network/socket_utils.h"
 
-#include <unistd.h>
-
 int main() {
     constexpr int kPort = 9000;
+#ifdef _WIN32
+    constexpr socket_handle_t kInvalidSocket = INVALID_SOCKET;
+#else
+    constexpr socket_handle_t kInvalidSocket = -1;
+#endif
 
-    const int server_socket = create_server_socket(kPort);
-    if (server_socket < 0) {
+    const socket_handle_t server_socket = create_server_socket(kPort);
+    if (server_socket == kInvalidSocket) {
         std::cerr << "[SERVER] Failed to create server socket." << std::endl;
         return 1;
     }
 
     std::cout << "[SERVER] Listening on port " << kPort << "..." << std::endl;
 
-    const int client_socket = accept_client(server_socket);
-    if (client_socket < 0) {
+    const socket_handle_t client_socket = accept_client(server_socket);
+    if (client_socket == kInvalidSocket) {
         std::cerr << "[SERVER] Failed to accept client connection." << std::endl;
-        ::close(server_socket);
+        close_socket(server_socket);
         return 1;
     }
     std::cout << "[SERVER] Client connected" << std::endl;
@@ -33,7 +36,7 @@ int main() {
         std::cout << "[SERVER] Received: " << message << std::endl;
     }
 
-    ::close(client_socket);
-    ::close(server_socket);
+    close_socket(client_socket);
+    close_socket(server_socket);
     return 0;
 }
