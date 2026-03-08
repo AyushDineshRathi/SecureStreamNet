@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <stdexcept>
 
 #include "../network/socket_utils.h"
 #include "../protocol/packet.h"
@@ -8,6 +9,36 @@
 
 // Serializer functions are implemented in protocol/serializer.cpp.
 Packet deserialize_packet(const std::string& json_string);
+
+namespace {
+unsigned int hex_nibble(char c) {
+    if (c >= '0' && c <= '9') {
+        return static_cast<unsigned int>(c - '0');
+    }
+    if (c >= 'a' && c <= 'f') {
+        return static_cast<unsigned int>(10 + (c - 'a'));
+    }
+    if (c >= 'A' && c <= 'F') {
+        return static_cast<unsigned int>(10 + (c - 'A'));
+    }
+    throw std::runtime_error("Invalid hex character in IV");
+}
+
+std::string hex_to_bytes(const std::string& input) {
+    if ((input.size() % 2) != 0) {
+        throw std::runtime_error("Invalid hex length for IV");
+    }
+
+    std::string out;
+    out.reserve(input.size() / 2);
+    for (size_t i = 0; i < input.size(); i += 2) {
+        const unsigned int hi = hex_nibble(input[i]);
+        const unsigned int lo = hex_nibble(input[i + 1]);
+        out.push_back(static_cast<char>((hi << 4) | lo));
+    }
+    return out;
+}
+}  // namespace
 
 int main() {
     constexpr int kPort = 9000;
@@ -66,7 +97,8 @@ int main() {
         }
         std::cout << "[SERVER] Integrity check passed" << std::endl;
 
-        const std::string frame = decrypt_data(packet.encrypted_payload, kAesKey, packet.iv);
+        const std::string iv_raw = hex_to_bytes(packet.iv);
+        const std::string frame = decrypt_data(packet.encrypted_payload, kAesKey, iv_raw);
         std::cout << "[SERVER] Payload decrypted" << std::endl;
         std::cout << "[SERVER] Frame received: " << frame << std::endl;
     } catch (const std::exception& ex) {

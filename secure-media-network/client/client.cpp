@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <iomanip>
+#include <sstream>
 
 #include "../network/socket_utils.h"
 #include "../protocol/packet.h"
@@ -9,6 +11,17 @@
 
 // Serializer functions are implemented in protocol/serializer.cpp.
 std::string serialize_packet(const Packet& packet);
+
+namespace {
+std::string bytes_to_hex(const std::string& input) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (unsigned char ch : input) {
+        oss << std::setw(2) << static_cast<int>(ch);
+    }
+    return oss.str();
+}
+}  // namespace
 
 int main() {
     constexpr int kPort = 9000;
@@ -37,8 +50,9 @@ int main() {
         const std::string frame = "FRAME_1_DATA";
         std::cout << "[CLIENT] Frame generated" << std::endl;
 
-        const std::string iv = generate_random_iv();
-        const std::string encrypted_payload = encrypt_data(frame, kAesKey, iv);
+        const std::string iv_raw = generate_random_iv();
+        const std::string encrypted_payload = encrypt_data(frame, kAesKey, iv_raw);
+        const std::string iv_hex = bytes_to_hex(iv_raw);
         std::cout << "[CLIENT] Payload encrypted" << std::endl;
 
         const std::string checksum = compute_sha256(encrypted_payload);
@@ -49,7 +63,7 @@ int main() {
             "demo_token",
             static_cast<std::uint64_t>(std::time(nullptr)),
             1U,
-            iv,
+            iv_hex,
             encrypted_payload,
             checksum);
 
