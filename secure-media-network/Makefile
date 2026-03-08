@@ -1,21 +1,45 @@
-CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -I./protocol -I./security -I./network -I./common -I../include
+CXX ?= g++
+CXXFLAGS := -std=c++17 -Wall -Wextra
+CPPFLAGS := -I./protocol -I./security -I./network -I./common -I../include
 LDFLAGS :=
+LDLIBS := -lssl -lcrypto
+MSYS2_BIN := C:/msys64/mingw64/bin
 
 ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
+SHELL := cmd.exe
+.SHELLFLAGS := /C
+EXE := .exe
+LDLIBS += -lws2_32
+ifneq ("$(wildcard C:/msys64/mingw64/bin/g++.exe)","")
+CXX := C:/msys64/mingw64/bin/g++.exe
+endif
+else
+EXE :=
 endif
 
-# TODO(phase-2): Split build outputs into a dedicated build directory.
-# TODO(phase-3): Re-introduce crypto/protocol objects once packet security is implemented.
+COMMON_SOURCES := \
+	network/socket_utils.cpp \
+	protocol/serializer.cpp \
+	security/aes_encrypt.cpp \
+	security/sha256.cpp
+
+CLIENT_SOURCES := client/client.cpp $(COMMON_SOURCES)
+SERVER_SOURCES := server/server.cpp $(COMMON_SOURCES)
+
+CLIENT_BIN := client_app$(EXE)
+SERVER_BIN := server_app$(EXE)
 
 all: client server
 
+msys-build:
+	set "PATH=$(MSYS2_BIN);%PATH%" && $(MSYS2_BIN)/g++.exe $(CPPFLAGS) $(CXXFLAGS) $(CLIENT_SOURCES) -o client_app.exe $(LDFLAGS) $(LDLIBS)
+	set "PATH=$(MSYS2_BIN);%PATH%" && $(MSYS2_BIN)/g++.exe $(CPPFLAGS) $(CXXFLAGS) $(SERVER_SOURCES) -o server_app.exe $(LDFLAGS) $(LDLIBS)
+
 client:
-	$(CXX) $(CXXFLAGS) client/client.cpp network/socket_utils.cpp -o client_app $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CLIENT_SOURCES) -o $(CLIENT_BIN) $(LDFLAGS) $(LDLIBS)
 
 server:
-	$(CXX) $(CXXFLAGS) server/server.cpp network/socket_utils.cpp -o server_app $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(SERVER_SOURCES) -o $(SERVER_BIN) $(LDFLAGS) $(LDLIBS)
 
 clean:
 ifeq ($(OS),Windows_NT)

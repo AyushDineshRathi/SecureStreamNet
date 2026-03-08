@@ -2,19 +2,38 @@
 
 #include <openssl/sha.h>
 
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
-std::string sha256Hex(const std::vector<std::uint8_t>& input) {
-    // TODO(phase-2): Implement SHA-256 digest computation and hex formatting.
-    (void)input;
-    std::cout << "[SECURITY] sha256Hex skeleton called." << std::endl;
-    return "";
-}
+std::string compute_sha256(const std::string& data) {
+    std::cout << "[SECURITY] Computing SHA256 checksum" << std::endl;
 
-bool verifySha256Hex(const std::vector<std::uint8_t>& input, const std::string& expected_hex) {
-    // TODO(phase-2): Compare computed digest against expected hash.
-    (void)input;
-    (void)expected_hex;
-    std::cout << "[SECURITY] verifySha256Hex skeleton called." << std::endl;
-    return false;
+    SHA256_CTX ctx;
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+
+    if (SHA256_Init(&ctx) != 1) {
+        throw std::runtime_error("SHA256_Init failed");
+    }
+
+    if (SHA256_Update(
+            &ctx,
+            reinterpret_cast<const unsigned char*>(data.data()),
+            data.size()) != 1) {
+        throw std::runtime_error("SHA256_Update failed");
+    }
+
+    if (SHA256_Final(digest, &ctx) != 1) {
+        throw std::runtime_error("SHA256_Final failed");
+    }
+
+    std::ostringstream hex_stream;
+    hex_stream << std::hex << std::setfill('0');
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        hex_stream << std::setw(2) << static_cast<unsigned int>(digest[i]);
+    }
+
+    return hex_stream.str();
 }
