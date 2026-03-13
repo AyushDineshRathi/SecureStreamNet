@@ -29,6 +29,8 @@ SERVER_SOURCES := server/server.cpp $(COMMON_SOURCES)
 CLIENT_BIN := client_app$(EXE)
 SERVER_BIN := server_app$(EXE)
 
+.PHONY: all msys-build client server clean
+
 all: client server
 
 msys-build:
@@ -36,10 +38,18 @@ msys-build:
 	set "PATH=$(MSYS2_BIN);%PATH%" && $(MSYS2_BIN)/g++.exe $(CPPFLAGS) $(CXXFLAGS) $(SERVER_SOURCES) -o server_app.exe $(LDFLAGS) $(LDLIBS)
 
 client:
+ifeq ($(OS),Windows_NT)
+	set "PATH=$(MSYS2_BIN);%PATH%" && $(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CLIENT_SOURCES) -o $(CLIENT_BIN) $(LDFLAGS) $(LDLIBS)
+else
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CLIENT_SOURCES) -o $(CLIENT_BIN) $(LDFLAGS) $(LDLIBS)
+endif
 
 server:
+ifeq ($(OS),Windows_NT)
+	set "PATH=$(MSYS2_BIN);%PATH%" && $(CXX) $(CPPFLAGS) $(CXXFLAGS) $(SERVER_SOURCES) -o $(SERVER_BIN) $(LDFLAGS) $(LDLIBS)
+else
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(SERVER_SOURCES) -o $(SERVER_BIN) $(LDFLAGS) $(LDLIBS)
+endif
 
 clean:
 ifeq ($(OS),Windows_NT)

@@ -13,6 +13,7 @@ using socket_handle_t = int;
 
 // Creates a TCP server socket, binds to INADDR_ANY, and starts listening.
 socket_handle_t create_server_socket(int port);
+socket_handle_t create_server_socket(int port, int backlog);
 
 // Accepts one incoming TCP client connection.
 socket_handle_t accept_client(socket_handle_t server_socket);

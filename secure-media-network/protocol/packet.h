@@ -50,10 +50,19 @@ struct Packet {
         if (sender_id.empty()) {
             return false;
         }
+        if (auth_token.empty()) {
+            return false;
+        }
         if (encrypted_payload.empty()) {
             return false;
         }
+        if (iv.size() != 32) {
+            return false;
+        }
         if (payload_size != static_cast<uint32_t>(encrypted_payload.size())) {
+            return false;
+        }
+        if (timestamp == 0) {
             return false;
         }
         if (checksum.empty()) {

@@ -1,33 +1,28 @@
-#include <iostream>
-#include <string>
 #include <ctime>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
-using namespace std;
+#include <string>
 
+#include "../common/config.h"
 #include "../network/socket_utils.h"
 #include "../protocol/packet.h"
+#include "../protocol/serializer.h"
 #include "../security/aes_encrypt.h"
 #include "../security/sha256.h"
 
-// Serializer functions are implemented in protocol/serializer.cpp.
-string serialize_packet(const Packet& packet);
-
 namespace {
-string bytes_to_hex(const string& input) {
-    ostringstream oss;
-    oss << hex << setfill('0');
+std::string bytes_to_hex(const std::string& input) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
     for (unsigned char ch : input) {
-        oss << setw(2) << static_cast<int>(ch);
+        oss << std::setw(2) << static_cast<int>(ch);
     }
     return oss.str();
 }
 }
 
 int main() {
-    constexpr int kPort = 9000;
-    const string kHost = "127.0.0.1";
-    const string kAesKey = "0123456789abcdef0123456789abcdef";
 #ifdef _WIN32
     constexpr socket_handle_t kInvalidSocket = INVALID_SOCKET;
 #else
@@ -36,49 +31,49 @@ int main() {
 
     const socket_handle_t client_socket = create_client_socket();
     if (client_socket == kInvalidSocket) {
-        cerr << "[CLIENT] Failed to create client socket." << endl;
+        std::cerr << "[CLIENT] Failed to create client socket." << std::endl;
         return 1;
     }
 
-    if (!connect_to_server(client_socket, kHost, kPort)) {
-        cerr << "[CLIENT] Failed to connect to server." << endl;
+    if (!connect_to_server(client_socket, config::kServerHost, config::kServerPort)) {
+        std::cerr << "[CLIENT] Failed to connect to server." << std::endl;
         close_socket(client_socket);
         return 1;
     }
-    cout << "[CLIENT] Connected to server" << endl;
+    std::cout << "[CLIENT] Connected to server" << std::endl;
 
     try {
-        const string frame = "FRAME_1_DATA";
-        cout << "[CLIENT] Frame generated" << endl;
+        const std::string frame = config::kDemoFramePayload;
+        std::cout << "[CLIENT] Frame generated" << std::endl;
 
-        const string iv_raw = generate_random_iv();
-        const string encrypted_payload = encrypt_data(frame, kAesKey, iv_raw);
-        const string iv_hex = bytes_to_hex(iv_raw);
-        cout << "[CLIENT] Payload encrypted" << endl;
+        const std::string iv_raw = generate_random_iv();
+        const std::string encrypted_payload = encrypt_data(frame, config::kDemoAes256Key, iv_raw);
+        const std::string iv_hex = bytes_to_hex(iv_raw);
+        std::cout << "[CLIENT] Payload encrypted" << std::endl;
 
-        const string checksum = compute_sha256(encrypted_payload);
-        cout << "[CLIENT] Checksum computed" << endl;
+        const std::string checksum = compute_sha256(encrypted_payload);
+        std::cout << "[CLIENT] Checksum computed" << std::endl;
 
         const Packet packet(
-            "device_01",
-            "demo_token",
-            static_cast<uint64_t>(time(nullptr)),
+            config::kDemoSenderId,
+            config::kDemoAuthToken,
+            static_cast<std::uint64_t>(std::time(nullptr)),
             1U,
             iv_hex,
             encrypted_payload,
             checksum);
 
-        const string packet_json = serialize_packet(packet);
-        cout << "[CLIENT] Packet serialized" << endl;
+        const std::string packet_json = serialize_packet(packet);
+        std::cout << "[CLIENT] Packet serialized" << std::endl;
 
         if (!send_data(client_socket, packet_json)) {
-            cerr << "[CLIENT] Failed to send packet." << endl;
+            std::cerr << "[CLIENT] Failed to send packet." << std::endl;
             close_socket(client_socket);
             return 1;
         }
-        cout << "[CLIENT] Packet sent" << endl;
-    } catch (const exception& ex) {
-        cerr << "[CLIENT] Error: " << ex.what() << endl;
+        std::cout << "[CLIENT] Packet sent" << std::endl;
+    } catch (const std::exception& ex) {
+        std::cerr << "[CLIENT] Error: " << ex.what() << std::endl;
         close_socket(client_socket);
         return 1;
     }
