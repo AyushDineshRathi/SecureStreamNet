@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+using namespace std;
 
 #if __has_include(<nlohmann/json.hpp>)
 #include <nlohmann/json.hpp>
@@ -17,7 +18,7 @@
 
 using json = nlohmann::json;
 
-std::string serialize_packet(const Packet& packet) {
+string serialize_packet(const Packet& packet) {
     // Build a JSON object with the agreed packet schema.
     json j;
 
@@ -30,15 +31,15 @@ std::string serialize_packet(const Packet& packet) {
     j["encrypted_payload"] = packet.encrypted_payload;
     j["checksum"] = packet.checksum;
 
-    std::cout << "[SERIALIZER] Packet serialized" << std::endl;
+    cout << "[SERIALIZER] Packet serialized" << endl;
     return j.dump();
 }
 
-Packet deserialize_packet(const std::string& json_string) {
+Packet deserialize_packet(const string& json_string) {
     const json j = json::parse(json_string);
 
     // Fail fast if required fields are missing.
-    const std::vector<std::string> required_fields = {
+    const vector<string> required_fields = {
         "sender_id",
         "auth_token",
         "timestamp",
@@ -48,7 +49,7 @@ Packet deserialize_packet(const std::string& json_string) {
         "encrypted_payload",
         "checksum"};
 
-    std::vector<std::string> missing_fields;
+    vector<string> missing_fields;
     for (const auto& field : required_fields) {
         if (!j.contains(field)) {
             missing_fields.push_back(field);
@@ -56,31 +57,31 @@ Packet deserialize_packet(const std::string& json_string) {
     }
 
     if (!missing_fields.empty()) {
-        std::string message = "Missing required JSON fields: ";
+        string message = "Missing required JSON fields: ";
         for (size_t i = 0; i < missing_fields.size(); ++i) {
             message += missing_fields[i];
             if (i + 1 < missing_fields.size()) {
                 message += ", ";
             }
         }
-        throw std::runtime_error(message);
+        throw runtime_error(message);
     }
 
     Packet packet{};
 
-    packet.sender_id = j.at("sender_id").get<std::string>();
-    packet.auth_token = j.at("auth_token").get<std::string>();
-    packet.timestamp = j.at("timestamp").get<std::uint64_t>();
-    packet.sequence_number = j.at("sequence_number").get<std::uint32_t>();
-    packet.payload_size = j.at("payload_size").get<std::uint32_t>();
-    packet.iv = j.at("iv").get<std::string>();
-    packet.encrypted_payload = j.at("encrypted_payload").get<std::string>();
-    packet.checksum = j.at("checksum").get<std::string>();
+    packet.sender_id = j.at("sender_id").get<string>();
+    packet.auth_token = j.at("auth_token").get<string>();
+    packet.timestamp = j.at("timestamp").get<uint64_t>();
+    packet.sequence_number = j.at("sequence_number").get<uint32_t>();
+    packet.payload_size = j.at("payload_size").get<uint32_t>();
+    packet.iv = j.at("iv").get<string>();
+    packet.encrypted_payload = j.at("encrypted_payload").get<string>();
+    packet.checksum = j.at("checksum").get<string>();
 
-    std::cout << "[SERIALIZER] Packet deserialized" << std::endl;
+    cout << "[SERIALIZER] Packet deserialized" << endl;
     return packet;
 }
 
 // Backward-compatible wrappers for older call sites.
-std::string serializePacket(const Packet& packet) { return serialize_packet(packet); }
-Packet deserializePacket(const std::string& payload) { return deserialize_packet(payload); }
+string serializePacket(const Packet& packet) { return serialize_packet(packet); }
+Packet deserializePacket(const string& payload) { return deserialize_packet(payload); }

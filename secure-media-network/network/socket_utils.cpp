@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+using namespace std;
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -30,7 +31,7 @@ bool ensure_winsock_initialized() {
     WSADATA wsa_data{};
     const int result = ::WSAStartup(MAKEWORD(2, 2), &wsa_data);
     if (result != 0) {
-        std::cerr << "[NETWORK] WSAStartup() failed with code=" << result << std::endl;
+        cerr << "[NETWORK] WSAStartup() failed with code=" << result << endl;
         return false;
     }
 
@@ -78,13 +79,13 @@ socket_handle_t create_server_socket(int port) {
 
     const socket_handle_t server_fd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (is_invalid_socket(server_fd)) {
-        std::cerr << "[NETWORK] socket() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] socket() failed. code=" << last_socket_error() << endl;
         return invalid_socket_value();
     }
 
     const int reuse_addr = 1;
     if (::setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&reuse_addr), sizeof(reuse_addr)) < 0) {
-        std::cerr << "[NETWORK] setsockopt(SO_REUSEADDR) failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] setsockopt(SO_REUSEADDR) failed. code=" << last_socket_error() << endl;
         close_socket(server_fd);
         return invalid_socket_value();
     }
@@ -95,13 +96,13 @@ socket_handle_t create_server_socket(int port) {
     server_addr.sin_port = htons(static_cast<uint16_t>(port));
 
     if (::bind(server_fd, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr)) < 0) {
-        std::cerr << "[NETWORK] bind() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] bind() failed. code=" << last_socket_error() << endl;
         close_socket(server_fd);
         return invalid_socket_value();
     }
 
     if (::listen(server_fd, kDefaultBacklog) < 0) {
-        std::cerr << "[NETWORK] listen() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] listen() failed. code=" << last_socket_error() << endl;
         close_socket(server_fd);
         return invalid_socket_value();
     }
@@ -112,7 +113,7 @@ socket_handle_t create_server_socket(int port) {
 socket_handle_t accept_client(socket_handle_t server_socket) {
     const socket_handle_t client_fd = ::accept(server_socket, nullptr, nullptr);
     if (is_invalid_socket(client_fd)) {
-        std::cerr << "[NETWORK] accept() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] accept() failed. code=" << last_socket_error() << endl;
         return invalid_socket_value();
     }
     return client_fd;
@@ -127,13 +128,13 @@ socket_handle_t create_client_socket() {
 
     const socket_handle_t client_fd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (is_invalid_socket(client_fd)) {
-        std::cerr << "[NETWORK] socket() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] socket() failed. code=" << last_socket_error() << endl;
         return invalid_socket_value();
     }
     return client_fd;
 }
 
-bool connect_to_server(socket_handle_t socket_fd, const std::string& ip, int port) {
+bool connect_to_server(socket_handle_t socket_fd, const string& ip, int port) {
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(static_cast<uint16_t>(port));
@@ -141,26 +142,26 @@ bool connect_to_server(socket_handle_t socket_fd, const std::string& ip, int por
 #ifdef _WIN32
     const unsigned long ip_addr = ::inet_addr(ip.c_str());
     if (ip_addr == INADDR_NONE) {
-        std::cerr << "[NETWORK] inet_addr() failed for '" << ip << "'" << std::endl;
+        cerr << "[NETWORK] inet_addr() failed for '" << ip << "'" << endl;
         return false;
     }
     server_addr.sin_addr.s_addr = ip_addr;
 #else
     if (::inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr) <= 0) {
-        std::cerr << "[NETWORK] inet_pton() failed for '" << ip << "'" << std::endl;
+        cerr << "[NETWORK] inet_pton() failed for '" << ip << "'" << endl;
         return false;
     }
 #endif
 
     if (::connect(socket_fd, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr)) < 0) {
-        std::cerr << "[NETWORK] connect() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] connect() failed. code=" << last_socket_error() << endl;
         return false;
     }
 
     return true;
 }
 
-bool send_data(socket_handle_t socket_fd, const std::string& data) {
+bool send_data(socket_handle_t socket_fd, const string& data) {
     size_t total_sent = 0;
     while (total_sent < data.size()) {
         const auto bytes_sent = ::send(
@@ -169,7 +170,7 @@ bool send_data(socket_handle_t socket_fd, const std::string& data) {
             to_send_length(data.size() - total_sent),
             0);
         if (bytes_sent < 0) {
-            std::cerr << "[NETWORK] send() failed. code=" << last_socket_error() << std::endl;
+            cerr << "[NETWORK] send() failed. code=" << last_socket_error() << endl;
             return false;
         }
         total_sent += static_cast<size_t>(bytes_sent);
@@ -177,17 +178,17 @@ bool send_data(socket_handle_t socket_fd, const std::string& data) {
     return true;
 }
 
-std::string receive_data(socket_handle_t socket_fd) {
+string receive_data(socket_handle_t socket_fd) {
     char buffer[4096];
     const auto bytes_received = ::recv(socket_fd, buffer, static_cast<int>(sizeof(buffer)), 0);
     if (bytes_received < 0) {
-        std::cerr << "[NETWORK] recv() failed. code=" << last_socket_error() << std::endl;
+        cerr << "[NETWORK] recv() failed. code=" << last_socket_error() << endl;
         return "";
     }
     if (bytes_received == 0) {
         return "";
     }
-    return std::string(buffer, static_cast<size_t>(bytes_received));
+    return string(buffer, static_cast<size_t>(bytes_received));
 }
 
 void close_socket(socket_handle_t socket_fd) {
